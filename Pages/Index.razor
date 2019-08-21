@@ -1,0 +1,231 @@
+﻿@page "/"
+
+<div class="container mt-4">
+    @if (Tamamlandi)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                Tebrikler yarışmayı @Puan puan ile tamamladınız!
+            </div>
+        </div>
+    }
+
+    @if (MevcutSoru == null)
+    {
+        <div class="card-header">
+            <h5 class="mb-0">Kelime Oyunu Yarışmasına Hoşgeldiniz!</h5>
+        </div>
+        <div class="card-body">Yarışmaya başlamak için yarışmaya başla butonuna basın.</div>
+        <div class="card-footer">
+            <button class="btn btn-primary" @onclick="Basla">Yarışmaya Başla</button>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">@MevcutSoru.SoruMetni</h3>
+            </div>
+            <div class="card-body">
+                <div class="d-flex">
+                    @foreach (var harf in Harfler)
+                    {
+                        <Harf Deger="@harf.Harf" Acik="@harf.Acildi"></Harf>
+                    }
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex">
+                    <div class="mr-4">Toplam Puan: @Puan</div>
+                    <div class="mr-4">
+                        Kalan Süreniz:
+                        <kbd>@KalanSure</kbd> saniye
+                    </div>
+                    <div>Harf Puanı: @HarfPuan</div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="input-group">
+                    <input class="form-control"
+                           type="text"
+                           placeholder="Cevabınızı yazın"
+                           @bind="@YarismaciCevap" />
+                    <div class="input-group-append">
+                        <button class="btn btn-secondary" @onclick="HarfVer">Harf Ver</button>
+                        <button @onclick="CevapVer" class="btn btn-success">Cevap Ver</button>
+                    </div>
+                </div>
+            </div>
+            @if (Mesaj != null)
+            {
+                <div class="card-footer @MesajClass">@Mesaj</div>
+            }
+        </div>
+    }
+</div>
+
+@code{
+    List<Soru>
+    Sorular = new List<Soru>
+        {
+        new Soru{SoruMetni="Siyah ile aynı anlama gelen bir renk.",Cevap="KARA",Soruldu=false},
+        new Soru{SoruMetni="Sık kullanılan bir isim.",Cevap="AHMET",Soruldu=false},
+        new Soru{SoruMetni="Türkiye'nin başkenti",Cevap="ANKARA",Soruldu=false},
+        new Soru{SoruMetni="Karadenizde bir ilimiz",Cevap="TRABZON",Soruldu=false}
+            };
+    List<CevapHarf> Harfler = null;
+    private System.Threading.Timer Sure;
+    private System.Threading.Timer MesajSure;
+    private bool Tamamlandi { get; set; } = false;
+    private int Puan { get; set; } = 0;
+    private int HarfPuan { get; set; } = 0;
+    private Soru MevcutSoru { get; set; } = null;
+    private int KalanSure { get; set; } = 0;
+    public string Mesaj { get; set; } = null;
+    public string MesajClass { get; set; } = "";
+    public int MesajGosterimSuresi { get; set; } = 3;
+    public string YarismaciCevap { get; set; } = "";
+
+    private void Basla()
+    {
+        Tamamlandi = false;
+        MevcutSoru = null;
+        Puan = 0;
+        KalanSure = 240;
+        Sure = new System.Threading.Timer(SureyiIslet, null, 1000, 1000);
+
+        Sorular.ForEach(soru => soru.Soruldu = false);
+
+        void SureyiIslet(object state)
+        {
+            KalanSure -= 1;
+
+            this.StateHasChanged();
+
+            if (KalanSure == 0)
+            {
+                Bitir();
+                this.StateHasChanged();
+            }
+        }
+
+        SoruVer();
+        MesajGoster("İyi yarışmalar!");
+    }
+
+    private void Bitir()
+    {
+        Sure.Dispose();
+        MevcutSoru = null;
+        Tamamlandi = true;
+    }
+    private void SoruVer()
+    {
+        YarismaciCevap = "";
+        MevcutSoru = Sorular.FirstOrDefault(t => !t.Soruldu);
+        if (MevcutSoru == null)
+        {
+            Bitir();
+            return;
+        }
+
+
+        Harfler = MevcutSoru.Cevap.ToCharArray()
+            .Select(t => new CevapHarf
+            {
+                Harf = t.ToString(),
+                Acildi = false
+            }).ToList();
+        HarfPuan = Harfler.Count * 100;
+        MevcutSoru.Soruldu = true;
+    }
+
+    private void CevapVer()
+    {
+        if (YarismaciCevap.Length == 0)
+        {
+            return;
+        }
+
+        if (YarismaciCevap.Length != Harfler.Count)
+        {
+            MesajGoster("Harf sayıları tutmuyor!");
+            return;
+        }
+
+        var yarismaciCevap = YarismaciCevap.ToUpper(new System.Globalization.CultureInfo("tr-TR"));
+        var mevcutCevap = MevcutSoru.Cevap.ToUpper(new System.Globalization.CultureInfo("tr-TR"));
+
+        if (yarismaciCevap == mevcutCevap)
+        {
+            Puan += HarfPuan;
+            MesajGoster("Tebrikler, doğru bildiniz!", "basari");
+        }
+        else
+        {
+            Puan -= HarfPuan;
+            MesajGoster($"Yanlış cevap, doğrusu '{mevcutCevap}' olmalıydı!", "hata");
+        }
+        SoruVer();
+
+    }
+
+    private void HarfVer()
+    {
+        var rastgeleHarfIndex = new Random().Next(0, Harfler.Count - 1);
+
+        if (HarfPuan <= 100)
+        {
+            return;
+        }
+
+        var harf = Harfler[rastgeleHarfIndex];
+
+        while (harf.Acildi)
+        {
+            rastgeleHarfIndex = new Random().Next(0, Harfler.Count - 1);
+            harf = Harfler[rastgeleHarfIndex];
+        }
+
+        harf.Acildi = true;
+        HarfPuan -= 100;
+    }
+
+    private void MesajGoster(string mesaj, string mesajTuru = "")
+    {
+        if (MesajSure != null)
+        {
+            MesajSure.Dispose();
+            MesajGosterimSuresi = 3;
+        }
+
+        Mesaj = mesaj;
+
+        if (mesajTuru == "hata")
+        {
+            MesajClass = "bg-danger text-white";
+        }
+        else if (mesajTuru == "basari")
+        {
+            MesajClass = "bg-success text-white";
+        }
+        else
+        {
+            MesajClass = "bg-dark text-white";
+        }
+
+        MesajSure = new System.Threading.Timer(SureyiIslet, null, 1000, 1000);
+
+        void SureyiIslet(object state)
+        {
+            MesajGosterimSuresi -= 1;
+
+            if (MesajGosterimSuresi == 0)
+            {
+                this.Mesaj = null;
+                MesajSure.Dispose();
+                this.StateHasChanged();
+            }
+        }
+    }
+}

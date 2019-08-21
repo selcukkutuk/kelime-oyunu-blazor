@@ -1,0 +1,19 @@
+﻿<div class="harf shadow mr-3">
+    @if (Acik)
+    {
+        <span>@Deger</span>
+    }
+    else
+    {
+        <span></span>
+    }
+
+
+</div>
+
+@code {
+    [Parameter]
+    public string Deger { get; set; } = "";
+    [Parameter]
+    public bool Acik { get; set; } = false;
+}
