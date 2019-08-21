@@ -65,15 +65,15 @@
 </div>
 
 @code{
-    List<Soru>
-    Sorular = new List<Soru>
-        {
+        List<Soru>
+        Sorular = new List<Soru>
+            {
         new Soru{SoruMetni="Siyah ile aynı anlama gelen bir renk.",Cevap="KARA",Soruldu=false},
         new Soru{SoruMetni="Sık kullanılan bir isim.",Cevap="AHMET",Soruldu=false},
         new Soru{SoruMetni="Türkiye'nin başkenti",Cevap="ANKARA",Soruldu=false},
         new Soru{SoruMetni="Karadenizde bir ilimiz",Cevap="TRABZON",Soruldu=false}
-            };
-    List<CevapHarf> Harfler = null;
+                        };
+        List<CevapHarf> Harfler = null;
     private System.Threading.Timer Sure;
     private System.Threading.Timer MesajSure;
     private bool Tamamlandi { get; set; } = false;
@@ -84,7 +84,8 @@
     public string Mesaj { get; set; } = null;
     public string MesajClass { get; set; } = "";
     public int MesajGosterimSuresi { get; set; } = 3;
-    public string YarismaciCevap { get; set; } = "";
+    string _yarismaciCevap = "";
+    public string YarismaciCevap { get => _yarismaciCevap; set { _yarismaciCevap = value.ToUpper(new System.Globalization.CultureInfo("tr-TR")); } }
 
     private void Basla()
     {
